@@ -4,24 +4,27 @@
 % Sample Rate
 Fs = 44100;
 % String Freq
-Fc = 432;
+Fc = 100;
 %  delay line length
 N = floor((Fs/Fc)/2);
 % Pluck Pos
-Pp = 0.1;
+Pp = 0.6;
 NPp = floor(N * Pp);
 % PickUp Pos
-Pu = 0.7;
+Pu = 0.3;
 NPu = floor(N * Pu);
 % LPF Coeff 
-a = 0.995;
+a = 0.495;
 % APF coeff 
-g = 0;
+g = 0.5;
 
 % init left and right delays with triangle input, centre at pluck pos
 % [yl,yr,in] = deal([[0:NPp]/NPp,(N-[(NPp+1):N])/(N-NPp)]);
-[yl,yr,in] = deal(conv([[0:NPp]/NPp,(N-[(NPp+1):N])/(N-NPp)],x,'same'));
 
+Ex = [[0:NPp]/NPp,(N-[(NPp+1):N])/(N-NPp)];
+Ex = Ex.*(rand(1,length(Ex))*2);
+Ex = Ex - mean(Ex);
+[yl,yr] = deal(Ex);
 % init output
 y = yl(NPu) + yr(NPu);
 
@@ -42,8 +45,8 @@ while v
     LPFL = (a*yl(1)) + (a*prevL(1));   
       
     % LPF ---> APF 
-    APFR =   -g*LPFR + prevR(2) + g*prevR(3); 
-    APFL =  -g*LPFL + prevL(2) + g*prevL(3); 
+    APFR =   (-g*LPFR + prevR(2) + g*prevR(3)); 
+    APFL =  (-g*LPFL + prevL(2) + g*prevL(3)); 
    
     % Save previous values and APF Out
     prevR = [yr(end) LPFR APFR];
@@ -55,8 +58,8 @@ while v
     
     % overwrite start of each direction with lpf/apf values (negative for
     % phase)
-    yr(1) = -LPFL/2;
-    yl(end) = -APFL/2;
+    yr(1) = -APFL;
+    yl(end) = -APFR ;
     
     % read wave at pickup position
     y = [y (yl(NPu) + yr(NPu))*0.5];
@@ -72,7 +75,7 @@ end
 
 figure;
 subplot(2,1,1);
-plot(in);
+plot(Ex);
 title('Input - Triangle convolved with body IR');
 xlabel('Time');
 ylabel('Amp');
@@ -81,5 +84,3 @@ plot(y);
 title('Output');
 xlabel('Time');
 ylabel('Amp');
-
-soundsc(y,Fs);
